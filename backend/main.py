@@ -46,6 +46,21 @@ def read_transactions(
 ):
     return crud.get_transactions(db, user_id=current_user.id, skip=skip, limit=limit)
 
+@app.post("/assets/", response_model=schemas.AssetOut)
+def create_asset(
+    asset: schemas.AssetCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    return crud.create_asset(db=db, asset=asset, user_id=current_user.id)
+
+@app.get("/assets/", response_model=List[schemas.AssetOut])
+def read_assets(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    return crud.get_assets(db, user_id=current_user.id)
+
 @app.get("/")
 def read_root():
     return {"message": "Welcome to the AI Finance Assistant API!"}

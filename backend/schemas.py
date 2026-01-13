@@ -37,3 +37,17 @@ class TransactionOut(TransactionBase):
     date: datetime
     class Config:
         from_attributes = True
+
+class AssetBase(BaseModel):
+    symbol: str
+    quantity: float
+    buy_price: float
+    asset_type: str
+
+class AssetCreate(AssetBase):
+    pass
+
+class AssetOut(AssetBase):
+    id: int
+    class Config:
+        from_attribute = True

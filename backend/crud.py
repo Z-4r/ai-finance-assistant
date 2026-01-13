@@ -27,3 +27,13 @@ def get_transactions(db: Session, user_id: int, skip: int = 0, limit: int = 100)
     return db.query(models.Transaction)\
              .filter(models.Transaction.user_id == user_id)\
              .offset(skip).limit(limit).all()
+
+def create_asset(db: Session, asset: schemas.AssetCreate, user_id: int):
+    db_asset = models.Asset(**asset.dict(), user_id=user_id)
+    db.add(db_asset)
+    db.commit()
+    db.refresh(db_asset)
+    return db_asset
+
+def get_assets(db: Session, user_id: int):
+    return db.query(models.Asset).filter(models.Asset.user_id == user_id).all()
