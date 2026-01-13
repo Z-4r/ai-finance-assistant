@@ -51,3 +51,6 @@ class AssetOut(AssetBase):
     id: int
     class Config:
         from_attribute = True
+
+class ChatRequest(BaseModel):
+    question: str
