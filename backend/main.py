@@ -5,6 +5,7 @@ from database import get_db, engine
 from typing import List
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 import ai
+import finance
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -91,6 +92,48 @@ def chat_with_ai(
         return {"response": ai_response}
     except Exception as e:
         return {"error": str(e), "message": "Failed to contact Gemini API"}
+
+@app.get("/portfolio/performance")
+def get_portfolio_performance(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    # 1. Get user assets
+    assets = crud.get_assets(db, user_id=current_user.id)
+    
+    if not assets:
+        return {"message": "No assets found", "total_value": 0}
+
+    # 2. Extract symbols (e.g., ["AAPL", "BTC-USD"])
+    symbols = [asset.symbol for asset in assets]
+    
+    # 3. Fetch Live Prices
+    live_prices = finance.get_live_prices(symbols)
+    
+    # 4. Calculate Values
+    portfolio = []
+    total_value = 0.0
+    
+    for asset in assets:
+        current_price = live_prices.get(asset.symbol, 0.0)
+        current_value = current_price * asset.quantity
+        profit_loss = current_value - (asset.buy_price * asset.quantity)
+        
+        asset_data = {
+            "symbol": asset.symbol,
+            "quantity": asset.quantity,
+            "buy_price": asset.buy_price,
+            "current_price": current_price,
+            "total_value": round(current_value, 2),
+            "profit_loss": round(profit_loss, 2)
+        }
+        portfolio.append(asset_data)
+        total_value += current_value
+
+    return {
+        "total_portfolio_value": round(total_value, 2),
+        "holdings": portfolio
+    }
 
 @app.get("/")
 def read_root():
