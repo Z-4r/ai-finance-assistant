@@ -15,3 +15,15 @@ def create_user(db: Session, user: schemas.UserCreate):
     db.commit()
     db.refresh(db_user)
     return db_user
+
+def create_transaction(db: Session, transaction: schemas.TransactionCreate, user_id: int):
+    db_transaction = models.Transaction(**transaction.dict(), user_id=user_id)
+    db.add(db_transaction)
+    db.commit()
+    db.refresh(db_transaction)
+    return db_transaction
+
+def get_transactions(db: Session, user_id: int, skip: int = 0, limit: int = 100):
+    return db.query(models.Transaction)\
+             .filter(models.Transaction.user_id == user_id)\
+             .offset(skip).limit(limit).all()

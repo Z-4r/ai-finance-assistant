@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
+from datetime import datetime
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -21,3 +22,18 @@ class UserOut(UserBase):
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+class TransactionBase(BaseModel):
+    amount: float
+    category: str
+    type: str # 'income' or 'expense'
+    note: Optional[str] = None
+
+class TransactionCreate(TransactionBase):
+    pass
+
+class TransactionOut(TransactionBase):
+    id: int
+    date: datetime
+    class Config:
+        from_attributes = True

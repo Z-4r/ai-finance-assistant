@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey
 from database import Base
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 
 class User(Base):
     __tablename__ = "users"
@@ -15,3 +16,20 @@ class User(Base):
     financial_goal = Column(String, nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    transactions = relationship("Transaction", back_populates="owner")
+
+class Transaction(Base):
+    __tablename__ = "transactions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    amount = Column(Float, nullable=False)
+    category = Column(String, nullable=False)  # e.g., "Food", "Salary", "Rent"
+    type = Column(String, nullable=False)      # "income" or "expense"
+    date = Column(DateTime(timezone=True), server_default=func.now())
+    note = Column(String, nullable=True)
+
+    user_id = Column(Integer, ForeignKey("users.id"))
+    owner = relationship("User", back_populates="transactions")
+
+    
