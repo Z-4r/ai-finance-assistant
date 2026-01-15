@@ -54,3 +54,10 @@ class AssetOut(AssetBase):
 
 class ChatRequest(BaseModel):
     question: str
+
+class InvestmentRequest(BaseModel):
+    monthly_income: float
+    investable_amount: float
+    risk_appetite: str  # "low", "medium", "high"
+    target_amount: float # e.g., 500000 (5 Lakhs)
+    time_horizon_years: int # e.g., 3 years

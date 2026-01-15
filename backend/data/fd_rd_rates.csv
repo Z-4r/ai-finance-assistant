@@ -1,0 +1,53 @@
+Bank,Type,Duration_Months,Interest_Rate,Min_Investment,Risk_Rating
+State Bank of India,FD,12,6.05%,1000,Low
+State Bank of India,FD,36,6.60%,1000,Low
+State Bank of India,RD,12,6.80%,100,Low
+State Bank of India,RD,36,7.00%,100,Low
+HDFC Bank,FD,12,6.15%,1000,Low
+HDFC Bank,FD,36,6.40%,1000,Low
+HDFC Bank,RD,12,7.00%,100,Low
+HDFC Bank,RD,36,7.20%,100,Low
+ICICI Bank,FD,12,6.50%,1000,Low
+ICICI Bank,FD,36,6.70%,1000,Low
+ICICI Bank,RD,12,7.00%,100,Low
+ICICI Bank,RD,36,7.25%,100,Low
+Axis Bank,FD,12,6.45%,1000,Low
+Axis Bank,FD,36,7.10%,1000,Low
+Axis Bank,RD,12,7.25%,100,Low
+Axis Bank,RD,36,7.30%,100,Low
+Kotak Mahindra Bank,FD,12,6.25%,1000,Low
+Kotak Mahindra Bank,FD,36,7.25%,1000,Low
+Kotak Mahindra Bank,RD,12,7.00%,100,Low
+Kotak Mahindra Bank,RD,36,7.40%,100,Low
+IDFC First Bank,FD,12,6.50%,1000,Low
+IDFC First Bank,FD,36,7.75%,1000,Low
+IDFC First Bank,RD,12,7.00%,100,Low
+IDFC First Bank,RD,36,7.50%,100,Low
+Bandhan Bank,FD,36,7.85%,1000,Low
+Bandhan Bank,RD,36,7.05%,100,Low
+IndusInd Bank,FD,36,7.85%,1000,Low
+IndusInd Bank,RD,36,7.75%,100,Low
+RBL Bank,FD,12,7.10%,1000,Low
+RBL Bank,FD,36,8.00%,1000,Low
+RBL Bank,RD,12,8.00%,100,Low
+RBL Bank,RD,36,8.00%,100,Low
+Yes Bank,FD,36,7.75%,1000,Low
+Yes Bank,RD,36,7.75%,100,Low
+DBS Bank,FD,36,7.50%,1000,Low
+DBS Bank,RD,36,7.00%,100,Low
+Deutsche Bank India,FD,36,8.00%,1000,Low
+Deutsche Bank India,RD,36,8.00%,100,Low
+Canara Bank,FD,36,7.25%,1000,Low
+Canara Bank,RD,36,7.25%,100,Low
+Bank of Baroda,FD,36,7.25%,1000,Low
+Bank of Baroda,RD,36,7.15%,100,Low
+IDBI Bank,FD,36,7.25%,1000,Low
+IDBI Bank,RD,36,7.00%,100,Low
+Indian Bank,FD,36,7.25%,1000,Low
+Indian Bank,RD,36,7.10%,100,Low
+Indian Overseas Bank,FD,36,7.10%,1000,Low
+Indian Overseas Bank,RD,36,7.30%,100,Low
+Punjab National Bank,FD,36,7.25%,1000,Low
+Punjab National Bank,RD,36,7.25%,100,Low
+UCO Bank,FD,36,6.50%,1000,Low
+UCO Bank,RD,36,7.30%,100,Low
