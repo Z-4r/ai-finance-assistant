@@ -6,6 +6,8 @@ from typing import List
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 import ai
 import finance
+import ml_engine
+import recommendation_engine
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -135,6 +137,44 @@ def get_portfolio_performance(
         "holdings": portfolio
     }
 
+@app.post("/predict/intraday")
+def predict_stock(
+    request: schemas.ChatRequest, # We can reuse this schema since it just needs a string
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    # User sends "RELIANCE" in the 'question' field (or we can make a new schema)
+    symbol = request.question.upper()
+    
+    # Run the ML Engine
+    prediction = ml_engine.predict_intraday(symbol)
+    
+    return prediction
+
+@app.post("/recommend/portfolio")
+def recommend_portfolio(
+    request: schemas.InvestmentRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    # Temporary profile object
+    class TempProfile:
+        risk_tolerance = request.risk_appetite
+    
+    profile = TempProfile()
+    
+    try:
+        # Pass the new fields: target_amount and time_horizon_years
+        portfolio = recommendation_engine.generate_portfolio(
+            profile, 
+            request.investable_amount,
+            request.target_amount,
+            request.time_horizon_years
+        )
+        return portfolio
+    except Exception as e:
+        return {"error": str(e)}
+    
 @app.get("/")
 def read_root():
     return {"message": "Welcome to the AI Finance Assistant API!"}
