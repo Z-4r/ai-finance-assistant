@@ -8,10 +8,21 @@ import ai
 import finance
 import ml_engine
 import recommendation_engine
+from fastapi.middleware.cors import CORSMiddleware
+import random
+from datetime import datetime, timedelta
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Ai Finanace Assistant")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"], # Make sure this matches your frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.post("/register", response_model=schemas.UserOut)
 def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -65,7 +76,7 @@ def read_assets(
 ):
     return crud.get_assets(db, user_id=current_user.id)
 
-@app.post("/chat/")
+@app.post("/chat")
 def chat_with_ai(
     request: schemas.ChatRequest,
     db: Session = Depends(get_db),
@@ -95,61 +106,23 @@ def chat_with_ai(
     except Exception as e:
         return {"error": str(e), "message": "Failed to contact Gemini API"}
 
-@app.get("/portfolio/performance")
-def get_portfolio_performance(
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_user)
-):
-    # 1. Get user assets
-    assets = crud.get_assets(db, user_id=current_user.id)
-    
-    if not assets:
-        return {"message": "No assets found", "total_value": 0}
-
-    # 2. Extract symbols (e.g., ["AAPL", "BTC-USD"])
-    symbols = [asset.symbol for asset in assets]
-    
-    # 3. Fetch Live Prices
-    live_prices = finance.get_live_prices(symbols)
-    
-    # 4. Calculate Values
-    portfolio = []
-    total_value = 0.0
-    
-    for asset in assets:
-        current_price = live_prices.get(asset.symbol, 0.0)
-        current_value = current_price * asset.quantity
-        profit_loss = current_value - (asset.buy_price * asset.quantity)
-        
-        asset_data = {
-            "symbol": asset.symbol,
-            "quantity": asset.quantity,
-            "buy_price": asset.buy_price,
-            "current_price": current_price,
-            "total_value": round(current_value, 2),
-            "profit_loss": round(profit_loss, 2)
-        }
-        portfolio.append(asset_data)
-        total_value += current_value
-
-    return {
-        "total_portfolio_value": round(total_value, 2),
-        "holdings": portfolio
-    }
 
 @app.post("/predict/intraday")
 def predict_stock(
-    request: schemas.ChatRequest, # We can reuse this schema since it just needs a string
+    request: schemas.PredictionRequest, # <--- Must use the schema from Step 1
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user)
 ):
-    # User sends "RELIANCE" in the 'question' field (or we can make a new schema)
-    symbol = request.question.upper()
+    # Debugging: Print to console to see if request arrives
+    print(f"Received Request -> Symbol: {request.symbol}, Period: {request.period}")
     
-    # Run the ML Engine
-    prediction = ml_engine.predict_intraday(symbol)
-    
-    return prediction
+    try:
+        # Pass both arguments to the engine
+        prediction = ml_engine.predict_intraday(request.symbol, request.period)
+        return prediction
+    except Exception as e:
+        print(f"Error in endpoint: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/recommend/portfolio")
 def recommend_portfolio(
@@ -175,6 +148,163 @@ def recommend_portfolio(
     except Exception as e:
         return {"error": str(e)}
     
+@app.delete("/assets/{asset_id}")
+def delete_asset(
+    asset_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    # Find the asset
+    asset = db.query(models.Asset).filter(models.Asset.id == asset_id, models.Asset.user_id == current_user.id).first()
+    
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    
+    db.delete(asset)
+    db.commit()
+    return {"message": "Asset deleted successfully"}
+    
+@app.put("/assets/{asset_id}")
+def update_asset(
+    asset_id: int,
+    asset_update: schemas.AssetCreate, # Re-using AssetCreate schema since fields are same
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    # 1. Find the asset
+    db_asset = db.query(models.Asset).filter(models.Asset.id == asset_id, models.Asset.user_id == current_user.id).first()
+    
+    if not db_asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    
+    # 2. Update fields
+    db_asset.symbol = asset_update.symbol
+    db_asset.quantity = asset_update.quantity
+    db_asset.buy_price = asset_update.buy_price
+    db_asset.asset_type = asset_update.asset_type
+    
+    db.commit()
+    db.refresh(db_asset)
+    return db_asset
+
+# --- 1. SHARED HELPER FUNCTION (No 'Depends' here!) ---
+def calculate_portfolio_summary(assets):
+    """
+    Accepts a list of asset objects.
+    Fetches live prices and calculates totals + individual asset performance.
+    """
+    total_invested = 0.0
+    total_current_value = 0.0
+    
+    # 1. Get Live Prices (Batch fetch is better)
+    symbols = [asset.symbol for asset in assets]
+    
+    # Check if 'finance' module is imported and works, otherwise empty dict
+    # Assuming you have: import finance
+    live_prices = {}
+    if symbols:
+        try:
+            live_prices = finance.get_live_prices(symbols)
+        except Exception as e:
+            print(f"Error fetching prices: {e}")
+            live_prices = {}
+
+    processed_assets = []
+
+    # 2. Iterate to Calculate
+    for asset in assets:
+        # Get Price (Use live price, fallback to buy_price if missing)
+        current_price = live_prices.get(asset.symbol, asset.buy_price)
+        
+        # Calculate Individual Stats
+        invested = asset.quantity * asset.buy_price
+        current_val = asset.quantity * current_price
+        
+        # Add to Globals
+        total_invested += invested
+        total_current_value += current_val
+        
+        # Add to List (for Portfolio Page)
+        processed_assets.append({
+            "id": asset.id,
+            "symbol": asset.symbol,
+            "quantity": asset.quantity,
+            "buy_price": asset.buy_price,
+            "current_price": current_price,
+            "total_value": current_val,
+            "profit_loss": current_val - invested
+        })
+
+    # 3. Calculate Final Globals
+    total_profit = total_current_value - total_invested
+    
+    profit_percent = 0.0
+    if total_invested > 0:
+        profit_percent = (total_profit / total_invested) * 100
+
+    return {
+        "invested": total_invested,
+        "current_value": total_current_value,
+        "profit": total_profit,
+        "profit_percent": profit_percent,
+        "holdings": processed_assets # returning the list here saves work later
+    }
+
+
+# --- 2. PORTFOLIO ENDPOINT ---
+@app.get("/portfolio/performance")
+def get_portfolio_performance(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    # 1. Get Assets
+    assets = crud.get_assets(db, user_id=current_user.id)
+    
+    if not assets:
+        return {"total_portfolio_value": 0, "holdings": []}
+    
+    # 2. Use Helper
+    stats = calculate_portfolio_summary(assets)
+
+    # 3. Return formatted response
+    # The helper already did the hard work of building the 'holdings' list
+    return {
+        "total_portfolio_value": round(stats["current_value"], 2),
+        "total_profit": round(stats["profit"], 2),
+        "profit_percent": round(stats["profit_percent"], 2),
+        "holdings": stats["holdings"] 
+    }
+
+
+# --- 3. DASHBOARD ENDPOINT ---
+@app.get("/dashboard")
+def get_dashboard_stats(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    # 1. Fetch Assets
+    assets = crud.get_assets(db, user_id=current_user.id)
+
+    # 2. Use Helper
+    stats = calculate_portfolio_summary(assets)
+
+    # 3. Activity Count (Predictions)
+    active_count = db.query(models.Prediction).filter(
+        models.Prediction.user_id == current_user.id
+    ).count()
+
+    # 4. Return Data
+    return {
+        "user_name": current_user.full_name if current_user.full_name else current_user.email,
+        "portfolio_value": stats["current_value"],
+        "total_profit": stats["profit"],
+        "profit_percent": stats["profit_percent"],
+        "active_count": active_count,
+        "chart_data": [
+            {"name": "Invested", "value": stats["invested"]}, 
+            {"name": "Current Value", "value": stats["current_value"]}
+        ]
+    }
 @app.get("/")
 def read_root():
     return {"message": "Welcome to the AI Finance Assistant API!"}
