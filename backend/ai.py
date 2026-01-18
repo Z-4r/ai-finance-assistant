@@ -29,7 +29,7 @@ def ask_ai_advisor(user_profile, financial_data, user_question):
         You are speaking to {name}.
         
         Here is their financial snapshot:
-        - Monthly Income: ${income}
+        - Monthly Income: ₹{income}
         - Risk Tolerance: {risk}
         - Recent Transactions: {transactions}
         - Current Assets (Portfolio): {assets}
