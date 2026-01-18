@@ -1,204 +1,316 @@
+
 import pandas as pd
 import numpy as np
 import requests
 import os
 from sklearn.linear_model import LinearRegression
 from dotenv import load_dotenv
+import logging
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
 API_KEY = os.getenv("INDIAN_API_KEY")
-BASE_URL = "https://stock.indianapi.in/historical_data"
+if not API_KEY:
+    raise ValueError("INDIAN_API_KEY not found in environment variables. Please set it in your .env file.")
 
-def fetch_historical_data(symbol):
+BASE_URL = "https://stock.indianapi.in"
+
+def fetch_company_fundamentals(symbol):
     """
-    Fetches historical data from IndianAPI.in
-    We use '2yr' or '1yr' to ensure we have enough data points for the ML model.
+    Fetches fundamental data (Analyst Ratings, Industry, P/E) to validate trades.
+    Hedge funds don't just trade lines; they trade companies.
     """
-    # IndianAPI expects clean symbols like "RELIANCE" (usually without .NS, but we handle both)
     clean_symbol = symbol.replace(".NS", "").replace(".BO", "")
     
+    # Endpoint: /stock (Get Company Data by Name)
+    url = f"{BASE_URL}/stock"
+    params = {"name": clean_symbol}
+    headers = {"X-Api-Key": API_KEY}
+    
+    try:
+        response = requests.get(url, params=params, headers=headers, timeout=10)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            logger.warning(f"Fundamentals API returned status {response.status_code} for {symbol}")
+            return None
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Fundamental Data Error for {symbol}: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"Unexpected error fetching fundamentals for {symbol}: {e}")
+        return None
+
+def fetch_historical_data(symbol, period="1yr"):
+    """
+    Fetches 1 Year of data safely and slices it locally.
+    """
+    clean_symbol = symbol.replace(".NS", "").replace(".BO", "")
+    
+    # Always fetch 1yr to ensure technical indicators (EMA, RSI) have enough data
+    url = f"{BASE_URL}/historical_data"
     params = {
         "stock_name": clean_symbol,
-        "period": "1yr", # 1 year of daily data is good for trend prediction
+        "period": "1yr", 
         "filter": "default"
     }
-    
     headers = {"X-Api-Key": API_KEY}
 
     try:
-        response = requests.get(BASE_URL, params=params, headers=headers)
-        
+        response = requests.get(url, params=params, headers=headers, timeout=10)
         if response.status_code == 200:
             data = response.json()
-            
-            # PARSING LOGIC SPECIFIC TO INDIANAPI.IN
-            # The API usually returns: {'datasets': [{'values': [[date, close, ...]]}]} 
-            # or sometimes a flat list depending on the specific endpoint version.
-            
-            raw_data = []
-            
             if "datasets" in data and len(data["datasets"]) > 0:
-                # Structure: Date, Open, High, Low, Close, Volume (Standard format)
-                # We need to verify if it's a list of lists or list of dicts.
-                # Assuming list of lists: ['2023-01-01', 2500, 2550, 2490, 2520, 10000]
                 values = data["datasets"][0].get("values", [])
-                
-                # Check if values exist
                 if not values:
+                    logger.warning(f"No data values returned for {symbol}")
                     return None
 
-                # Convert to DataFrame
-                # We map columns based on standard OHLCV order from their docs
                 df = pd.DataFrame(values)
                 
-                # Handle column naming dynamically
+                # Robust Column Mapping
                 if len(df.columns) >= 6:
-                     df = df.iloc[:, :6] # Keep first 6 columns
-                     df.columns = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume']
+                    df = df.iloc[:, :6]
+                    df.columns = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume']
                 elif len(df.columns) == 2:
-                     # Sometimes API returns only Date, Close
-                     df.columns = ['Date', 'Close']
-                     # Mock H/L for robustness if missing
-                     df['High'] = df['Close']
-                     df['Low'] = df['Close']
+                    df.columns = ['Date', 'Close']
+                    df['High'] = df['Close']
+                    df['Low'] = df['Close']
+                elif len(df.columns) >= 5:
+                    # Handle 5-column case (possibly missing Volume)
+                    df = df.iloc[:, :5]
+                    df.columns = ['Date', 'Open', 'High', 'Low', 'Close']
+                else:
+                    logger.error(f"Unexpected column count ({len(df.columns)}) for {symbol}")
+                    return None
                 
-                # Clean Data
-                df['Close'] = pd.to_numeric(df['Close'], errors='coerce')
-                df['High'] = pd.to_numeric(df['High'], errors='coerce')
-                df['Low'] = pd.to_numeric(df['Low'], errors='coerce')
+                # Convert to numeric
+                for col in ['Close', 'High', 'Low']:
+                    if col in df.columns:
+                        df[col] = pd.to_numeric(df[col], errors='coerce')
                 
-                return df.dropna()
+                df = df.dropna()
+                
+                if len(df) == 0:
+                    logger.warning(f"All data was NaN for {symbol}")
+                    return None
 
+                # Slice Data Locally based on User Period
+                period_map = {"1mo": 22, "3mo": 66, "6mo": 132, "1yr": 252, "7d": 7}
+                rows_to_keep = period_map.get(period, 252)
+                
+                if len(df) > rows_to_keep:
+                    df = df.tail(rows_to_keep)
+                    
+                return df
             else:
-                print(f"Structure mismatch for {symbol}: {data.keys()}")
+                logger.warning(f"No datasets found for {symbol}")
                 return None
         else:
-            print(f"API Error {response.status_code}: {response.text}")
+            logger.warning(f"Historical API returned status {response.status_code} for {symbol}")
             return None
-
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Historical Data Request Error for {symbol}: {e}")
+        return None
     except Exception as e:
-        print(f"Error fetching history for {symbol}: {e}")
+        logger.error(f"Unexpected error fetching historical data for {symbol}: {e}")
         return None
 
 def calculate_technical_indicators(df):
     """
-    Adds RSI, EMA, and Volatility to the dataframe.
+    Calculates RSI, EMA, and Volatility.
     """
-    # Ensure we have enough data
-    if len(df) < 21:
-        return df
-
-    # RSI (Relative Strength Index)
-    delta = df['Close'].diff()
-    gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
-    rs = gain / loss
-    df['RSI'] = 100 - (100 / (1 + rs))
-
-    # EMA (Exponential Moving Average)
-    df['EMA_9'] = df['Close'].ewm(span=9, adjust=False).mean()
-    df['EMA_21'] = df['Close'].ewm(span=21, adjust=False).mean()
+    # 1. Volatility (High - Low)
+    if 'High' in df.columns and 'Low' in df.columns:
+        df['Volatility'] = df['High'] - df['Low']
+    else:
+        df['Volatility'] = df['Close'] * 0.01  # Fallback: 1% of close
     
-    # Volatility (ATR Proxy: High - Low)
-    df['Volatility'] = df['High'] - df['Low']
-    
+    # 2. RSI
+    if len(df) >= 14:
+        delta = df['Close'].diff()
+        gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+        
+        # Prevent division by zero
+        loss = loss.replace(0, 0.001)
+        
+        rs = gain / loss
+        df['RSI'] = 100 - (100 / (1 + rs))
+    else:
+        df['RSI'] = 50  # Neutral if insufficient data
+
+    # 3. EMAs
+    if len(df) >= 9:
+        df['EMA_9'] = df['Close'].ewm(span=9, adjust=False).mean()
+    else:
+        df['EMA_9'] = df['Close']
+
+    if len(df) >= 21:
+        df['EMA_21'] = df['Close'].ewm(span=21, adjust=False).mean()
+    else:
+        df['EMA_21'] = df['Close']
+
     return df.dropna()
 
-def predict_intraday(symbol):
+def analyze_fundamentals(fundamentals):
     """
-    Predicts the next likely price target and stop loss.
+    Analyzes fundamental data and returns analyst score.
+    Returns: (analyst_score, analyst_sentiment)
     """
-    # 1. Get Real Data from IndianAPI
-    df = fetch_historical_data(symbol)
+    analyst_score = 0  # -1 (Bearish) to +1 (Bullish)
+    analyst_sentiment = "NEUTRAL"
     
-    if df is None or len(df) < 30:
-        return {
-            "symbol": symbol,
-            "error": "Insufficient data from IndianAPI. Check symbol or API Limit."
-        }
+    if not fundamentals:
+        return analyst_score, analyst_sentiment
+    
+    # Parse Analyst Recommendations
+    if "recosBar" in fundamentals:
+        recos = fundamentals["recosBar"]
+        
+        try:
+            if isinstance(recos, dict):
+                # Count buy vs sell signals
+                buy_signals = recos.get('buy', 0) + recos.get('strongBuy', 0)
+                sell_signals = recos.get('sell', 0) + recos.get('strongSell', 0)
+                hold_signals = recos.get('hold', 0)
+                
+                total_signals = buy_signals + sell_signals + hold_signals
+                
+                if total_signals > 0:
+                    if buy_signals > sell_signals * 2:
+                        analyst_score += 1
+                        analyst_sentiment = "BULLISH"
+                    elif sell_signals > buy_signals * 2:
+                        analyst_score -= 1
+                        analyst_sentiment = "BEARISH"
+            elif isinstance(recos, list):
+                # Handle list format if API returns it that way
+                buy_count = sum(1 for r in recos if 'buy' in str(r).lower())
+                sell_count = sum(1 for r in recos if 'sell' in str(r).lower())
+                
+                if buy_count > sell_count * 2:
+                    analyst_score += 1
+                    analyst_sentiment = "BULLISH"
+                elif sell_count > buy_count * 2:
+                    analyst_score -= 1
+                    analyst_sentiment = "BEARISH"
+        except (KeyError, TypeError, AttributeError) as e:
+            logger.warning(f"Could not parse recosBar: {e}")
+    
+    # Check daily momentum
+    if "percentChange" in fundamentals:
+        try:
+            pct_change = float(fundamentals["percentChange"])
+            if pct_change > 2.0:
+                analyst_score += 0.5
+            elif pct_change < -2.0:
+                analyst_score -= 0.5
+        except (ValueError, TypeError):
+            pass
+    
+    return analyst_score, analyst_sentiment
 
-    # 2. Add Indicators
+def predict_intraday(symbol, period="1yr"):
+    """
+    Main prediction function combining technical and fundamental analysis.
+    """
+    # 1. Fetch Technical Data (Price History)
+    df = fetch_historical_data(symbol, period)
+    
+    # 2. Fetch Fundamental Data (Analyst Ratings)
+    fundamentals = fetch_company_fundamentals(symbol)
+    
+    # --- SAFETY CHECKS ---
+    if df is None or len(df) < 5:
+        return {"symbol": symbol, "error": f"Insufficient price data for {period}."}
+
+    # --- TECHNICAL ANALYSIS (The Quant Model) ---
     df = calculate_technical_indicators(df)
     
-    if df.empty:
-         return {"symbol": symbol, "error": "Not enough data for indicators."}
+    features = [f for f in ['Close', 'RSI', 'EMA_9', 'EMA_21', 'Volatility'] if f in df.columns]
+    
+    if not features:
+        return {"symbol": symbol, "error": "Could not calculate indicators."}
 
-    # 3. Prepare for ML (Linear Regression)
-    # We use previous Close, RSI, and EMA to predict the NEXT Close
-    df['Target'] = df['Close'].shift(-1) # The value we want to predict
+    # Train Linear Regression
+    df['Target'] = df['Close'].shift(-1)
     data_for_ml = df.dropna()
+    
+    if len(data_for_ml) < 2:
+        return {"symbol": symbol, "error": "Not enough data for ML training."}
 
-    if len(data_for_ml) < 10:
-        return {"symbol": symbol, "error": "Not enough training data."}
-
-    features = ['Close', 'RSI', 'EMA_9', 'EMA_21', 'Volatility']
     X = data_for_ml[features]
     y = data_for_ml['Target']
-
-    # Train Model
+    
     model = LinearRegression()
     model.fit(X, y)
 
-    # 4. Predict Next Move
-    last_row = df.iloc[[-1]][features] # Get the very latest candle
+    # Predict
+    last_row = df.iloc[[-1]][features]
     predicted_price = model.predict(last_row)[0]
-    
     current_price = last_row['Close'].values[0]
-    current_rsi = last_row['RSI'].values[0]
+    current_rsi = last_row['RSI'].values[0] if 'RSI' in last_row else 50
+    atr = df['Volatility'].mean() if 'Volatility' in df else current_price * 0.01
 
-    # 5. Generate Logic-Based Signals
-    atr = df['Volatility'].mean()
+    # --- FUNDAMENTAL ANALYSIS (The Hedge Fund Filter) ---
+    analyst_score, analyst_sentiment = analyze_fundamentals(fundamentals)
+
+    # --- FINAL "HEDGE FUND" DECISION LOGIC ---
     
-    # Logic: If Prediction is higher AND trend is up (EMA 9 > EMA 21) -> BUY
-    signal = "HOLD"
-    if predicted_price > current_price and current_rsi < 70:
-        signal = "BUY"
-        stop_loss = current_price - (atr * 1.5) 
-        target = predicted_price + (atr * 1.0) 
-    elif predicted_price < current_price or current_rsi > 70:
-        signal = "SELL"
+    # 1. Technical Signal
+    tech_signal = "HOLD"
+    if predicted_price > current_price:
+        tech_signal = "BUY"
+    elif predicted_price < current_price:
+        tech_signal = "SELL"
+
+    # 2. Combine with Indicators
+    # RSI Filter: Don't buy if overbought (>70), Don't sell if oversold (<30)
+    if tech_signal == "BUY" and current_rsi > 70:
+        tech_signal = "HOLD (Overbought)"
+    if tech_signal == "SELL" and current_rsi < 30:
+        tech_signal = "HOLD (Oversold)"
+    
+    # 3. Final Signal Construction
+    final_signal = tech_signal
+    confidence = "Standard"
+
+    # Hedge Fund Boost: If Tech is BUY and Fundamentals are Strong -> STRONG BUY
+    if "BUY" in tech_signal and tech_signal != "HOLD (Overbought)" and analyst_score > 0:
+        final_signal = "STRONG BUY"
+        confidence = "High (Tech + Funda)"
+    
+    # Hedge Fund Cut: If Tech is BUY but Fundamentals are Weak -> WEAK BUY
+    if "BUY" in tech_signal and tech_signal != "HOLD (Overbought)" and analyst_score < 0:
+        final_signal = "WEAK BUY"
+        confidence = "Low (Conflict)"
+
+    # --- TARGET & STOP LOSS ---
+    if "BUY" in final_signal and final_signal != "HOLD (Overbought)":
+        stop_loss = current_price - (atr * 1.5)
+        target = predicted_price + atr
+    elif "SELL" in final_signal and final_signal != "HOLD (Oversold)":
         stop_loss = current_price + (atr * 1.5)
-        target = predicted_price - (atr * 1.0)
+        target = predicted_price - atr
     else:
-        signal = "NEUTRAL"
         stop_loss = current_price - atr
         target = current_price + atr
 
     return {
         "symbol": symbol.upper(),
+        "period_analyzed": period,
         "current_price": round(float(current_price), 2),
-        "signal": signal,
+        "signal": final_signal,
         "predicted_target": round(float(target), 2),
         "stop_loss": round(float(stop_loss), 2),
         "rsi": round(float(current_rsi), 2),
-        "confidence": "High (IndianAPI Data)"
+        "confidence": confidence,
+        "analyst_sentiment": analyst_sentiment,
+        "analyst_score": round(analyst_score, 2)
     }
 
-def recommend_investment(user_profile):
-    """
-    Same investment logic as before.
-    """
-    risk = user_profile.risk_tolerance.lower()
-    recommendations = []
-
-    if risk == "low":
-        recommendations = [
-            {"type": "Fixed Deposit (FD)", "allocation": "50%", "reason": "Zero risk, guaranteed returns."},
-            {"type": "Debt Mutual Funds", "allocation": "30%", "reason": "Better than savings account."},
-            {"type": "Gold Bonds", "allocation": "20%", "reason": "Hedge against inflation."}
-        ]
-    elif risk == "moderate":
-        recommendations = [
-            {"type": "Nifty 50 Index Fund", "allocation": "40%", "reason": "Stable market growth."},
-            {"type": "Flexi-cap Fund", "allocation": "30%", "reason": "Diversified equity exposure."},
-            {"type": "Corporate Bonds", "allocation": "30%", "reason": "Fixed income stability."}
-        ]
-    else: # High
-        recommendations = [
-            {"type": "Mid-Cap Mutual Funds", "allocation": "40%", "reason": "High growth potential."},
-            {"type": "Direct Stocks", "allocation": "30%", "reason": "Aggressive returns."},
-            {"type": "Crypto / IPOs", "allocation": "30%", "reason": "High risk bets."}
-        ]
-
-    return recommendations
