@@ -61,3 +61,8 @@ class InvestmentRequest(BaseModel):
     risk_appetite: str  # "low", "medium", "high"
     target_amount: float # e.g., 500000 (5 Lakhs)
     time_horizon_years: int # e.g., 3 years
+
+class PredictionRequest(BaseModel):
+    symbol: str
+    period: str = "1yr"
+
