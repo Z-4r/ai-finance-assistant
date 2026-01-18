@@ -134,7 +134,7 @@ const Dashboard = () => {
                         </select>
                     </div>
                     
-                    <div className="h-75 w-full min-h-[300px]">
+                    <div className="h-75 w-full min-h-75">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={data.chart_data.length > 0 ? data.chart_data : []}>
                                 <defs>
@@ -213,7 +213,7 @@ const Dashboard = () => {
                         </div>
                     </div>
 
-                    <div className="mt-6 p-4 rounded-xl bg-gradient-to-r from-blue-600 to-blue-800 text-white relative overflow-hidden">
+                    <div className="mt-6 p-4 rounded-xl bg-linear-to-r from-blue-600 to-blue-800 text-white relative overflow-hidden">
                         <div className="relative z-10">
                             <h4 className="font-bold mb-1">Upgrade Plan</h4>
                             <p className="text-xs text-blue-100 mb-3">Get unlimited AI predictions</p>
