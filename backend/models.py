@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Foreig
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from database import Base
+from datetime import datetime
 
 class User(Base):
     __tablename__ = "users"
@@ -17,8 +18,11 @@ class User(Base):
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    # --- RELATIONSHIPS ---
+    # We removed 'holdings' because that class no longer exists.
     transactions = relationship("Transaction", back_populates="owner")
     assets = relationship("Asset", back_populates="owner")
+    predictions = relationship("Prediction", back_populates="owner")
 
 class Transaction(Base):
     __tablename__ = "transactions"
@@ -41,10 +45,21 @@ class Asset(Base):
     symbol = Column(String, nullable=False)
     quantity = Column(Float, nullable=False)
     buy_price = Column(Float, nullable=False)
-    asset_type = Column(String, nullable=False) # stock, crypto, etf
+    current_price = Column(Float, default=0.0) 
+    asset_type = Column(String, nullable=False)
     
-    # Foreign Key (The Bridge - THIS WAS LIKELY MISSING)
     user_id = Column(Integer, ForeignKey("users.id"))
     
-    # Relationship
     owner = relationship("User", back_populates="assets")
+
+class Prediction(Base):
+    __tablename__ = "predictions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    symbol = Column(String)
+    signal = Column(String)
+    predicted_target = Column(Float)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    owner = relationship("User", back_populates="predictions")
