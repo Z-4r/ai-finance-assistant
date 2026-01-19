@@ -3,7 +3,7 @@ uvicorn
 sqlalchemy
 pydantic
 passlib[bcrypt]
-python-jose[cryptography]
+python-jose
 python-multipart
 langchain
 langchain-google-genai
