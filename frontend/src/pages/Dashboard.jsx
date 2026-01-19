@@ -79,8 +79,8 @@ const Dashboard = () => {
                 {/* Live Market Status */}
                 <div className="text-right hidden md:block">
                     <p className="text-sm text-slate-500 mb-1">Market Status</p>
-                    <div className={`flex items-center justify-end gap-2 ${isMarketOpen ? "text-emerald-400" : "text-red-400"}`}>
-                        <div className={`w-2 h-2 rounded-full ${isMarketOpen ? "bg-emerald-400 animate-pulse" : "bg-red-400"}`} />
+                    <div className={`flex items-center justify-end gap-2 ${isMarketOpen ? "text-blue-600" : "text-red-400"}`}>
+                        <div className={`w-2 h-2 rounded-full ${isMarketOpen ? "bg-blue-600 animate-pulse" : "bg-red-400"}`} />
                         <span className="font-medium">
                             {isMarketOpen ? "Live Market Open" : "Market Closed"}
                         </span>
@@ -199,7 +199,7 @@ const Dashboard = () => {
                             <Link to="/advisor" className="block p-4 bg-slate-900 rounded-xl border border-slate-700 hover:border-emerald-500 transition-colors group">
                                 <div className="flex justify-between items-center">
                                     <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-emerald-500/20 text-emerald-400 rounded-lg">
+                                        <div className="p-2 bg-emerald-500/20 text-blue-600 rounded-lg">
                                             <Activity size={20} />
                                         </div>
                                         <div>

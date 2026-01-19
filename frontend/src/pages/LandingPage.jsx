@@ -22,9 +22,9 @@ const LandingPage = () => {
 
           {/* Center Links (Hidden on mobile) */}
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-400">
-            <a href="#features" className="hover:text-green-400 transition-colors">Features</a>
-            <a href="#solutions" className="hover:text-green-400 transition-colors">Solutions</a>
-            <a href="#pricing" className="hover:text-green-400 transition-colors">Pricing</a>
+            <a href="#features" className="hover:text-blue-600 transition-colors">Features</a>
+            <a href="#solutions" className="hover:text-blue-600 transition-colors">Solutions</a>
+            <a href="#pricing" className="hover:text-blue-600 transition-colors">Pricing</a>
           </div>
 
           {/* AUTH BUTTONS - LINKED TO YOUR PAGES */}
@@ -37,7 +37,7 @@ const LandingPage = () => {
             </button>
             <button 
               onClick={() => navigate('/register')}
-              className="bg-green-500 hover:bg-green-400 text-black text-sm font-bold py-2.5 px-5 rounded-md transition-all hover:scale-105 shadow-[0_0_15px_rgba(34,197,94,0.4)]"
+              className="bg-green-500 hover:bg-blue-600 text-black text-sm font-bold py-2.5 px-5 rounded-md transition-all hover:scale-105 shadow-[0_0_15px_rgba(34,197,94,0.4)]"
             >
               Sign Up
             </button>
@@ -65,8 +65,8 @@ const LandingPage = () => {
             </span>
             <span className="mx-4 font-light text-green-500">+</span> 
             <span className="inline-flex items-center gap-3">
-              <span className="text-green-400 drop-shadow-[0_0_10px_rgba(74,222,128,0.5)]">AI</span>
-              <Sparkles className="w-10 h-10 text-green-400 fill-green-400/20" />
+              <span className="text-blue-600 drop-shadow-[0_0_10px_rgba(74,222,128,0.5)]">AI</span>
+              <Sparkles className="w-10 h-10 text-blue-600 fill-blue-600/20" />
             </span>
           </h1>
           
@@ -77,7 +77,7 @@ const LandingPage = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button 
               onClick={() => navigate('/register')}
-              className="bg-green-500 hover:bg-green-400 text-black text-lg font-bold py-4 px-8 rounded-full transition-all hover:scale-105 flex items-center gap-2 group"
+              className="bg-green-500 hover:bg-blue-600 text-black text-lg font-bold py-4 px-8 rounded-full transition-all hover:scale-105 flex items-center gap-2 group"
             >
               Join The Community
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -91,7 +91,7 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-bold mb-4">
-              Choose your <span className="text-green-400 italic font-serif">adventure</span>
+              Choose your <span className="text-blue-600 italic font-serif">adventure</span>
             </h2>
           </div>
 
@@ -103,7 +103,7 @@ const LandingPage = () => {
               className="p-10 rounded-3xl bg-[#0f0f0f] border border-white/10 hover:border-green-500/50 transition-colors group relative overflow-hidden"
             >
               <div className="w-14 h-14 bg-green-900/20 rounded-2xl flex items-center justify-center mb-6 border border-green-500/20">
-                <Shield className="text-green-400 w-7 h-7" />
+                <Shield className="text-blue-600 w-7 h-7" />
               </div>
               <h3 className="text-2xl font-bold mb-3 text-white">For Investors</h3>
               <p className="text-gray-400 mb-8 leading-relaxed">
@@ -160,8 +160,8 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-6 text-center md:text-left flex flex-col md:flex-row justify-between items-center text-gray-600 text-sm">
           <p>© 2024 FinanceAI.</p>
           <div className="flex gap-8 mt-4 md:mt-0">
-            <a href="#" className="hover:text-green-400 transition-colors">Privacy</a>
-            <a href="#" className="hover:text-green-400 transition-colors">Terms</a>
+            <a href="#" className="hover:text-blue-600 transition-colors">Privacy</a>
+            <a href="#" className="hover:text-blue-600 transition-colors">Terms</a>
           </div>
         </div>
       </footer>
