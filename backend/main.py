@@ -18,7 +18,7 @@ app = FastAPI(title="Ai Finanace Assistant")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", ""],
+    allow_origins=["http://localhost:5173", "https://ai-finance-assistant-frontend.vercel.app/"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
