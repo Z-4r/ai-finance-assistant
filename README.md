@@ -1,66 +1,170 @@
-AI-Powered Finance Assistant
-A robust web application designed to help users track their stock portfolios, calculate real-time profit and loss, and receive AI-driven market insights. Built with a high-performance FastAPI backend deployed on AWS.
+# AI‑Powered Personal Finance & Investment Assistant
 
- Features
-Secure Authentication: User registration and login using JWT tokens.
+An end‑to‑end **AI‑driven personal finance and investment platform** that helps users make smarter financial decisions based on their **risk appetite, income, expenses, and financial goals**. The system combines traditional financial planning with **LLM‑powered insights, market sentiment analysis, and real‑time portfolio tracking**.
 
-Real-Time Dashboard: Get an instant overview of total invested capital, current portfolio value, and overall profit/loss percentage.
+---
 
-Portfolio Management: Easily add, edit, and track stock holdings (symbol, quantity, buy price).
+## 🚀 Features
 
-Live Market Data: Integration with finance APIs (e.g., yfinance) to fetch near real-time stock prices for accurate valuation.
+### 🧠 AI‑Based Financial Guidance
+- Personalized investment strategies based on:
+  - Risk profile (Low / Moderate / High)
+  - Income & expense patterns
+  - Financial targets (short‑term & long‑term)
+- AI‑generated actionable insights using **LangChain + Gemini API**
 
-AI Predictions: (Future/Current capability) View market predictions and signals for specific assets.
+### 💰 Investment Recommendations
+- Asset allocation suggestions across:
+  - Fixed Deposits (FD)
+  - Recurring Deposits (RD)
+  - Mutual Funds & SIPs
+  - Stocks
+- Strategy recommendations aligned with user risk tolerance
 
-RESTful API: Fully documented API capability via Swagger UI.
+### 🏦 Smart Banking Suggestions
+- Recommends:
+  - High‑interest savings accounts
+  - Best FD & RD interest rates
+- Data sourced from **indianapi.in**
 
-🛠️ Tech Stack
-Backend Framework: FastAPI (Python) - Chosen for its speed and ease of use.
+### 📈 Stock Price Prediction & Sentiment Analysis
+- Designed for users interested in **intra‑day trading**
+- Features:
+  - Historical price analysis
+  - News & sentiment‑based market signals
+  - AI‑assisted short‑term trade insights
 
-Database ORM: SQLAlchemy - For interacting with the database using Python objects.
+### 📊 Budgeting & Expense Tracker
+- Track income vs expenses in real time
+- Category‑wise spending analysis
+- Monthly & yearly financial summaries
 
-Database: SQLite (Development) / Ready for PostgreSQL (Production).
+### 📁 Portfolio Management Dashboard
+- Real‑time portfolio tracking
+- Asset allocation visualization
+- AI‑assisted portfolio rebalancing suggestions
 
-Data Fetching: yfinance - For retrieving market data.
+### 📉 Intuitive Dashboards & Projections
+- Interactive charts and graphs
+- Financial goal projections
+- Risk vs return visualizations
 
-Authentication: OAuth2 with Password flow and JWT tokens.
+---
 
-Deployment: AWS EC2 (Ubuntu Linux), Nginx (Reverse Proxy), Gunicorn/Uvicorn (Process Management).
+## 🧱 Tech Stack
 
-📦 Local Installation & Setup
-Follow these steps to run the backend server locally on your machine.
+### Frontend
+- **React**
+- **Tailwind CSS**
 
-Prerequisites
-Python 3.8 or higher
+### Backend
+- **FastAPI**
+- **PostgreSQL**
 
-Git
+### AI & Data
+- **LangChain**
+- **Google Gemini API**
+- **indianapi.in** (banking & financial data)
 
-Steps
-Clone the Repository
+---
 
-git clone https://github.com/Z-4r/ai-finance-assistant.git
-cd YOUR_REPO_NAME
-Create and Activate Virtual Environment
+## 🖥️ Application Screenshots
 
-Create a Virtual Environment:
-Windows
-python -m venv venv
-venv\Scripts\activate
+> _Add screenshots of your application UI here_
 
-Mac/Linux:
-python3 -m venv venv
-source venv/bin/activate
+### 🔐 Authentication
+```
+[ Screenshot Placeholder – Login / Signup Page ]
+```
 
-Install Dependencies
+### 🧠 Risk Profiling & Financial Inputs
+```
+[ Screenshot Placeholder – Risk Assessment & User Inputs ]
+```
+
+### 📊 Dashboard Overview
+```
+[ Screenshot Placeholder – Main Dashboard ]
+```
+
+### 💼 Investment Recommendations
+```
+[ Screenshot Placeholder – AI Investment Suggestions ]
+```
+
+### 📈 Stock Prediction & Sentiment Analysis
+```
+[ Screenshot Placeholder – Stock Prediction Dashboard ]
+```
+
+### 📁 Portfolio Management
+```
+[ Screenshot Placeholder – Portfolio Tracking & Rebalancing ]
+```
+
+### 💰 Expense & Budget Tracker
+```
+[ Screenshot Placeholder – Expense Tracking UI ]
+```
+
+---
+
+## ⚙️ Installation & Setup
+
+### Prerequisites
+- Node.js
+- Python 3.10+
+- PostgreSQL
+
+### Backend Setup
+```bash
+cd backend
 pip install -r requirements.txt
+uvicorn main:app --reload
+```
 
-Run the Server
-uvicorn backend.main:app --reload
-
-For Frontend:
+### Frontend Setup
+```bash
 cd frontend
 npm install
-
-Run the Development Server Start the frontend application:
 npm run dev
+```
+
+---
+
+## 🔐 Environment Variables
+
+Create a `.env` file and configure the following:
+
+```env
+DATABASE_URL=
+GEMINI_API_KEY=
+INDIAN_API_KEY=
+```
+
+---
+
+## 📌 Use Cases
+- Beginners seeking structured investment guidance
+- Salaried professionals planning long‑term wealth
+- Users interested in stock trading with AI insights
+- Individuals aiming to improve budgeting discipline
+
+---
+
+## 🛣️ Future Enhancements
+- Tax optimization recommendations
+- Goal‑based investment automation
+- Multi‑currency & international market support
+- Mobile application
+- Voice‑based AI financial assistant
+
+---
+
+## 📄 License
+This project is licensed under the MIT License.
+
+---
+
+## ⭐ If you find this project useful, consider giving it a star!
 
