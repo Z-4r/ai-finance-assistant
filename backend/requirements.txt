@@ -12,3 +12,7 @@ python-dotenv
 psycopg2-binary
 email-validator
 pydantic[email]
+pandas
+langchain-core
+numpy
+scikit-learn
