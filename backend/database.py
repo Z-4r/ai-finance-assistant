@@ -18,7 +18,9 @@ if SQLALCHEMY_DATABASE_URL.startswith("postgresql"):
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
     pool_pre_ping=True,
-    connect_args=connect_args,
+    connect_args={
+        "sslmode": "require"
+    }
 )
 
 SessionLocal = sessionmaker(
