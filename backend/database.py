@@ -8,8 +8,24 @@ load_dotenv()
 
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+if not SQLALCHEMY_DATABASE_URL:
+    raise RuntimeError("SQLALCHEMY_DATABASE_URL is not set")
+
+connect_args = {}
+if SQLALCHEMY_DATABASE_URL.startswith("postgresql"):
+    connect_args = {"sslmode": "require"}
+
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    pool_pre_ping=True,
+    connect_args=connect_args,
+)
+
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine,
+)
 
 Base = declarative_base()
 

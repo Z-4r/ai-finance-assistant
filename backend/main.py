@@ -1,28 +1,30 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-import models, schemas, auth, crud
-from database import get_db, engine
-from typing import List
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-import ai
-import finance
-import ml_engine
-import recommendation_engine
 from fastapi.middleware.cors import CORSMiddleware
-import random
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from typing import List
 from datetime import datetime, timedelta
 
-models.Base.metadata.create_all(bind=engine)
+import models, schemas, auth, crud, finance, ml_engine, ai, recommendation_engine
+from database import get_db, engine
 
-app = FastAPI(title="Ai Finanace Assistant")
+app = FastAPI(title="AI Finance Assistant")
 
+# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "https://ai-finance-assistant-frontend.vercel.app/"],
+    allow_origins=[
+        "http://localhost:5173",
+        "https://ai-finance-assistant-frontend.vercel.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.on_event("startup")
+def on_startup():
+    models.Base.metadata.create_all(bind=engine)
 
 @app.post("/register", response_model=schemas.UserOut)
 def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
